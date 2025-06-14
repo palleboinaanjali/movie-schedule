@@ -1,0 +1,131 @@
+import mysql.connector
+import time
+
+class Database:
+    def __init__(self):
+        pass
+
+    def connect(self):
+        self.con = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="anjali@04",
+            database="theater"
+        )
+        self.cur = self.con.cursor()
+
+    def insert(self, movie_name, screen_number, show_timing):
+        self.connect()
+        insert_query = """
+        INSERT INTO schedule (movie_name, screen_number, show_timing)
+        VALUES (%s, %s, %s)
+        """
+        values = (movie_name, screen_number, show_timing)
+        self.cur.execute(insert_query, values)
+        self.con.commit()
+        self.cur.close()
+        self.con.close()
+        print(" Data added successfully.")
+
+    def create_schedule(self):
+        movie_name = input("Enter movie name: ")
+        screen_number = input("Enter screen number: ")
+        show_timing = input("Enter show timing (e.g., 6:00 PM): ")
+        self.insert(movie_name, screen_number, show_timing)
+
+    def view_schedule(self):
+        self.connect()
+        self.cur.execute("SELECT * FROM schedule")
+        rows = self.cur.fetchall()
+
+        if rows:
+            print("\n🎬 Schedule Table:")
+            for row in rows:
+                print(f"Movie: {row[0]},  Screen: {row[1]},  Timing: {row[2]}")
+        else:
+            print(" No schedules found.")
+
+        self.cur.close()
+        self.con.close()
+
+    def update_schedule(self):
+        self.connect()
+        print("\n Type 'done' if you want to finish updating.")
+
+        while True:
+            old_movie_name = input("\nEnter the current movie name (or type 'done' to finish): ")
+            if old_movie_name.lower() == "done":
+                break
+
+            self.cur.execute("SELECT * FROM schedule WHERE movie_name = %s", (old_movie_name,))
+            result = self.cur.fetchone()
+
+            if result:
+                print(f"\nCurrent Schedule: Movie: {result[0]}, Screen: {result[1]}, Timing: {result[2]}")
+
+                new_movie_name = input("Enter new movie name: ")
+                new_screen_number = input("Enter new screen number: ")
+                new_show_timing = input("Enter new show timing (e.g., 6:00 PM): ")
+
+                update_query = """
+                UPDATE schedule 
+                SET movie_name = %s, screen_number = %s, show_timing = %s 
+                WHERE movie_name = %s
+                """
+                self.cur.execute(update_query, (new_movie_name, new_screen_number, new_show_timing, old_movie_name))
+                self.con.commit()
+                print(" Schedule updated successfully.")
+            else:
+                print(f" No schedule found for movie '{old_movie_name}'.")
+
+        self.cur.close()
+        self.con.close()
+
+    def delete_schedule(self):
+        movie = input("Enter the movie name you want to delete: ")
+        self.connect()
+        self.cur.execute("DELETE FROM schedule WHERE movie_name = %s", (movie,))
+        self.con.commit()
+
+        if self.cur.rowcount > 0:
+            print(f" Schedule for movie '{movie}' deleted successfully.")
+        else:
+            print(f" No schedule found for movie '{movie}'.")
+
+        self.cur.close()
+        self.con.close()
+
+
+def main():
+    db = Database()
+
+    while True:
+        print("\n--- Theater Schedule Management ---")
+        print("1. Create Schedule")
+        print("2. View Schedule")
+        print("3. Update Schedule")
+        print("4. Delete Schedule")
+        print("5. Exit")
+        choice = input("Enter your choice (1-5): ")
+
+        if choice == '1':
+            db.create_schedule()
+            input("\nPress Enter to return to the menu...")
+        elif choice == '2':
+            db.view_schedule()
+            input("\nPress Enter to return to the menu...")
+        elif choice == '3':
+            db.update_schedule()
+            input("\nPress Enter to return to the menu...")
+        elif choice == '4':
+            db.delete_schedule()
+            input("\nPress Enter to return to the menu...")
+        elif choice == '5':
+            print(" Exiting... Goodbye!")
+            break
+        else:
+            print(" Invalid choice. Please select a valid option.")
+            time.sleep(1)
+
+
+main()
